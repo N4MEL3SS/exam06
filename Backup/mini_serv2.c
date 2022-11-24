@@ -9,7 +9,7 @@ const int BUF_SIZE = 4096 * 2;
 int clients[1024];
 int max_fd = 0, next_id = -1;
 fd_set ready_read, ready_write, active;
-char buf_write[BUF_SIZE], buf_read[BUF_SIZE], msg[BUF_SIZE];
+char buf_read[BUF_SIZE], buf_write[BUF_SIZE], msg[BUF_SIZE];
 
 void f_error(char *str)
 {
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 
 	if (argc != 2)
 		f_error("Wrong number of arguments\n");
-	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 		f_error("Fatal error\n");
 
 	max_fd = sockfd;
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 
 	if ((bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr))) != 0)
 		f_error("Fatal error\n");
-	if (listen(sockfd, 10) != 0)
+	if (listen(sockfd, 128) != 0)
 		f_error("Fatal error\n");
 
 	while (1)
@@ -57,11 +57,11 @@ int main(int argc, char *argv[])
 		if (select(max_fd + 1, &ready_read, &ready_write, NULL, NULL) < 0)
 			continue;
 
-		for (int fd_i = 3; fd_i <= max_fd ; ++fd_i)
+		for (int fd_i = 3; fd_i <= max_fd; ++fd_i)
 		{
 			if (FD_ISSET(fd_i, &ready_read) && fd_i == sockfd)
 			{
-				if ((connfd = accept(sockfd, (struct sockaddr*)&servaddr, (socklen_t*)&len)) < 0)
+				if ((connfd = accept(sockfd, (struct sockaddr *)&servaddr, (socklen_t*)&len)) < 0)
 					continue;
 
 				if (connfd > max_fd)
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 			{
 				if ((res = recv(fd_i, buf_read, BUF_SIZE, 0)) <= 0)
 				{
-					sprintf(buf_write, "server: client %d just left\n", clients[connfd]);
+					sprintf(buf_write, "server: client %d just left\n", clients[fd_i]);
 					send_all(fd_i);
 					FD_CLR(fd_i, &active);
 					close(fd_i);
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 				}
 				else
 				{
-					for (int i = 0, j = strlen(msg); i < res; ++i, ++j)
+					for (int i = 0, j = strlen(msg); i < res; ++i, j++)
 					{
 						msg[j] = buf_read[i];
 						if (msg[j] == '\n')
