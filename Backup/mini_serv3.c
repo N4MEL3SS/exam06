@@ -7,9 +7,9 @@
 
 const int BUF_SIZE = 4096 * 2;
 int clients[1024];
-int max_fd = 0, next_id = -1;
+int max_fd, next_id = -1;
 fd_set ready_read, ready_write, active;
-char buf_write[BUF_SIZE], buf_read[BUF_SIZE], msg[BUF_SIZE];
+char buf_read[BUF_SIZE], buf_write[BUF_SIZE], msg[BUF_SIZE];
 
 void f_error(char *str)
 {
@@ -29,20 +29,20 @@ void send_all(int self)
 int main(int argc, char *argv[])
 {
 	int sockfd, connfd, len, res;
-	struct sockaddr_in servaddr;
+	struct sockaddr_in servaddr; 
 
 	if (argc != 2)
 		f_error("Wrong number of arguments\n");
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 		f_error("Fatal error\n");
-
+	
 	max_fd = sockfd;
 	FD_ZERO(&active);
 	FD_SET(sockfd, &active);
 	bzero(&clients, sizeof(clients));
-	bzero(&servaddr, sizeof(servaddr));
-
-	servaddr.sin_family = AF_INET;
+	
+	bzero(&servaddr, sizeof(servaddr)); 
+	servaddr.sin_family = AF_INET; 
 	servaddr.sin_addr.s_addr = htonl(2130706433); //127.0.0.1
 	servaddr.sin_port = htons(atoi(argv[1]));
 
@@ -50,21 +50,21 @@ int main(int argc, char *argv[])
 		f_error("Fatal error\n");
 	if (listen(sockfd, 10) != 0)
 		f_error("Fatal error\n");
-
+	
 	while (1)
 	{
 		ready_read = ready_write = active;
 		if (select(max_fd + 1, &ready_read, &ready_write, NULL, NULL) < 0)
 			continue;
 
-		for (int fd_i = 3; fd_i <= max_fd ; ++fd_i)
+		for (int fd_i = 3; fd_i <= max_fd; ++fd_i)
 		{
 			if (FD_ISSET(fd_i, &ready_read) && fd_i == sockfd)
 			{
-				if ((connfd = accept(sockfd, (struct sockaddr*)&servaddr, (socklen_t*)&len)) < 0)
+				if ((connfd = accept(sockfd, (struct sockaddr *)&servaddr, (socklen_t*)&len)) < 0)
 					continue;
-
-				if (connfd > max_fd)
+				
+				if (max_fd < connfd)
 					max_fd = connfd;
 				clients[connfd] = ++next_id;
 				FD_SET(connfd, &active);
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 			{
 				if ((res = recv(fd_i, buf_read, BUF_SIZE, 0)) <= 0)
 				{
-					sprintf(buf_write, "server: client %d just left\n", clients[connfd]);
+					sprintf(buf_write, "server: client %d just left\n", clients[fd_i]);
 					send_all(fd_i);
 					FD_CLR(fd_i, &active);
 					close(fd_i);
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 				}
 				else
 				{
-					for (int i = 0, j = strlen(msg); i < res; ++i, ++j)
+					for (int i = 0, j = 0; i < res; ++i, ++j)
 					{
 						msg[j] = buf_read[i];
 						if (msg[j] == '\n')
