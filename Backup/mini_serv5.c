@@ -21,7 +21,7 @@ void send_all(int self)
 {
 	for (int i = 3; i <= max_fd; ++i)
 	{
-		if (FD_ISSET(i, &active) && i != self)
+		if (FD_ISSET(i, &ready_write) && i != self)
 			send(i, buf_write, strlen(buf_write), 0);
 	}
 }
