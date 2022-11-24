@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-const int BUF_SIZE = 4096 * 2;
+const int BUF_SIZE = 4096 * 42;
 int clients[1024];
 int max_fd, id = -1;
 fd_set ready_read, ready_write, active;
@@ -21,14 +21,15 @@ void send_all(int self)
 {
 	for (int i = 3; i <= max_fd; ++i)
 	{
-		if (FD_ISSET(i, &active) && i != self)
+		if (FD_ISSET(i, &ready_write) && i != self)
 			send(i, buf_write, strlen(buf_write), 0);
 	}
 }
 
 int main(int argc, char *argv[])
 {
-	int sockfd, connfd, len, res;
+	int sockfd, connfd, res;
+	socklen_t len;
 	struct sockaddr_in servaddr;
 
 	if (argc != 2)
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
 		{
 			if (FD_ISSET(fd_i, &ready_read) && fd_i == sockfd)
 			{
-				if ((connfd = accept(sockfd, (struct sockaddr *)&servaddr, (socklen_t*)&len)) < 0)
+				if ((connfd = accept(sockfd, (struct sockaddr *)&servaddr, &len)) < 0)
 					continue;
 
 				if (max_fd < connfd)
