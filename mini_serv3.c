@@ -65,6 +65,7 @@ int main(int ac, char **av)
 		readfds = writefds = active;
 		if (select(fdMax + 1, &readfds, &writefds, NULL, NULL) < 0)
 			continue;
+
 		for(int fdI = 0; fdI <= fdMax; fdI++)
 		{
 			if (FD_ISSET(fdI, &readfds) && fdI == sockfd)

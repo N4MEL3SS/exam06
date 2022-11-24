@@ -61,7 +61,7 @@ int main(int ac, char **av)
 	if (listen(serverSock, 128) < 0)
 		fatal_error();
 
-	while (1)
+	while(1)
 	{
 		readyRead = readyWrite = active;
 		if (select(max + 1, &readyRead, &readyWrite, NULL, NULL) < 0)
