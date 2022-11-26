@@ -34,18 +34,19 @@ int main(int argc, char *argv[])
 
 	if (argc != 2)
 		f_error("Wrong number of arguments\n");
-	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) 
+	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 		f_error("Fatal error\n");
 
 	max_fd = sockfd;
 	FD_ZERO(&active);
-	FD_SET(sockfd, &active);
+	FD_SET(max_fd, &active);
 	bzero(&clients, sizeof(clients));
-	bzero(&servaddr, sizeof(servaddr)); 
-	servaddr.sin_family = AF_INET; 
+
+	bzero(&servaddr, sizeof(servaddr));
+	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(2130706433); //127.0.0.1
-	servaddr.sin_port = htons(atoi(argv[1])); 
-  
+	servaddr.sin_port = htons(atoi(argv[1]));
+
 	if ((bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr))) != 0)
 		f_error("Fatal error\n");
 	if (listen(sockfd, 128) != 0)
@@ -54,6 +55,7 @@ int main(int argc, char *argv[])
 	while (1)
 	{
 		ready_read = ready_write = active;
+
 		if (select(max_fd + 1, &ready_read, &ready_write, NULL, NULL) < 0)
 			continue;
 
@@ -64,12 +66,12 @@ int main(int argc, char *argv[])
 				if ((connfd = accept(sockfd, (struct sockaddr *)&servaddr, &len)) < 0)
 					continue;
 
-				if (max_fd < connfd)
+				if (connfd > max_fd)
 					max_fd = connfd;
 				clients[connfd] = ++id;
-				FD_SET(connfd, &active);
 				sprintf(buf_write, "server: client %d just arrived\n", clients[connfd]);
 				send_all(connfd);
+				FD_SET(connfd, &active);
 				break;
 			}
 			else if (FD_ISSET(fd_i, &ready_read) && fd_i != sockfd)
